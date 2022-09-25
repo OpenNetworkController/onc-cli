@@ -65,7 +65,7 @@ const schema: SchemaSchema = [
 
 export const systemSystemSchema = z.object({
   hostname: z.string(),
-  timezone: z.string(),
+  timezone: z.string().optional(),
 });
 
 export const networkSwitchSchema = z.object({
@@ -87,8 +87,9 @@ export const networkDeviceSchema = z.object({
 });
 
 export const networkInterfaceSchema = z.object({
+  name: z.string(),
   device: z.string(),
-  proto: z.enum(["static", "dhcp"]),
+  proto: z.enum(["static", "dhcp", "pppoe"]),
   ipaddr: z.string().optional(),
   netmask: z.string().optional(),
 });
@@ -121,11 +122,13 @@ export const firewallRuleSchema = z.object({
   proto: z.array(z.enum(firewallProtocols)).optional(),
   icmp_type: z.array(z.enum(icmpTypes)).optional(),
   src: z.string().optional(),
+  src_ip: z.array(z.string()).optional(),
   dest: z.string().optional(),
   dest_port: z.union([z.string(), z.array(z.number())]).optional(),
   dest_ip: z.array(z.string()).optional(),
   family: z.enum(["any", "ipv4", "ipv6"]).optional(),
   target: z.enum(firewallTargets),
+  limit: z.string().optional(),
 });
 
 export const wirelessWifiDeviceSchema = z.object({
@@ -171,36 +174,38 @@ export const openWRTConfigSchema = z.object({
       })
     ),
   }),
-  network: z.object({
-    switch: z
-      .array(
+  network: z
+    .object({
+      switch: z
+        .array(
+          z.object({
+            name: z.string().optional(),
+            properties: networkSwitchSchema,
+          })
+        )
+        .optional(),
+      switch_vlan: z
+        .array(
+          z.object({
+            name: z.string().optional(),
+            properties: networkSwitchVlanSchema,
+          })
+        )
+        .optional(),
+      device: z.array(
         z.object({
           name: z.string().optional(),
-          properties: networkSwitchSchema,
+          properties: networkDeviceSchema,
         })
-      )
-      .optional(),
-    switch_vlan: z
-      .array(
+      ),
+      interface: z.array(
         z.object({
           name: z.string().optional(),
-          properties: networkSwitchVlanSchema,
+          properties: networkInterfaceSchema,
         })
-      )
-      .optional(),
-    device: z.array(
-      z.object({
-        name: z.string().optional(),
-        properties: networkDeviceSchema,
-      })
-    ),
-    interface: z.array(
-      z.object({
-        name: z.string().optional(),
-        properties: networkInterfaceSchema,
-      })
-    ),
-  }),
+      ),
+    })
+    .optional(),
   firewall: z
     .object({
       defaults: z
